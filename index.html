@@ -3385,6 +3385,7 @@ async function saveToSupabase() {
     const payload = getPayload();
     const endpoint = `${supabaseConfig.url}/rest/v1/${supabaseConfig.table}`;
     const body = { key: 'main', payload, updated_at: new Date().toISOString() };
+    // Use upsert via POST with Prefer: resolution=merge-duplicates
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -3399,10 +3400,26 @@ async function saveToSupabase() {
       setSupabaseStatus(`✅ Sauvegardé le ${new Date().toLocaleString('fr-FR')}`, 'var(--green)');
       if (btn) { btn.textContent = '✅ Sauvegardé'; setTimeout(() => { btn.textContent = '☁️ Sauvegarder'; btn.disabled = false; }, 2000); }
     } else {
-      const err = await res.text();
-      setSupabaseStatus(`❌ Erreur ${res.status}`, 'var(--red)');
-      alert(`Erreur Supabase (${res.status}) :\n${err}`);
-      if (btn) { btn.textContent = '☁️ Sauvegarder'; btn.disabled = false; }
+      // Try PATCH if POST failed (record already exists)
+      const res2 = await fetch(`${endpoint}?key=eq.main`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type':  'application/json',
+          'apikey':         supabaseConfig.key,
+          'Authorization': `Bearer ${supabaseConfig.key}`,
+          'Prefer':        'return=minimal'
+        },
+        body: JSON.stringify({ payload, updated_at: new Date().toISOString() })
+      });
+      if (res2.ok || res2.status === 204) {
+        setSupabaseStatus(`✅ Sauvegardé le ${new Date().toLocaleString('fr-FR')}`, 'var(--green)');
+        if (btn) { btn.textContent = '✅ Sauvegardé'; setTimeout(() => { btn.textContent = '☁️ Sauvegarder'; btn.disabled = false; }, 2000); }
+      } else {
+        const err = await res2.text();
+        setSupabaseStatus(`❌ Erreur ${res2.status}`, 'var(--red)');
+        alert(`Erreur Supabase (${res2.status}) :\n${err}`);
+        if (btn) { btn.textContent = '☁️ Sauvegarder'; btn.disabled = false; }
+      }
     }
   } catch(e) {
     setSupabaseStatus('❌ Erreur réseau', 'var(--red)');
