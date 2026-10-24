@@ -30,13 +30,62 @@
   }
 
   @media print {
-    .header, .tabs-bar, .header-right, [class*="btn"], .modal-overlay { display: none !important; }
-    .panel { display: block !important; page-break-inside: avoid; }
-    body { background: #fff; color: #000; }
-    .card { border: 1px solid #ccc; break-inside: avoid; }
-    .pos { color: #1a7a50 !important; }
-    .neg { color: #7a1a1a !important; }
-    th, td { border-bottom: 1px solid #ddd; }
+    /* Masquer tout sauf le document actif */
+    .header, .tabs-bar, .header-right, [class*="btn"],
+    .modal-overlay, .inner-tabs, #cr-resultat-zone,
+    .card:has(canvas), .chart-container, canvas { display: none !important; }
+
+    body { background: #fff !important; color: #000 !important; margin: 0; padding: 0; }
+    .panel { display: block !important; }
+    .panel:not(.active) { display: none !important; }
+
+    /* Document CR / Bilan */
+    #cr-document, #bilan-document {
+      border: none !important;
+      border-radius: 0 !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      page-break-inside: avoid;
+      box-shadow: none !important;
+    }
+
+    /* En-têtes bleus → noir/blanc imprimé */
+    #cr-document > div:first-child,
+    #bilan-document > div:first-child {
+      background: #000 !important;
+      color: #fff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    #cr-document > div:first-child *,
+    #bilan-document > div:first-child * { color: #fff !important; }
+
+    #cr-table thead tr { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #cr-table thead th { color: #fff !important; }
+
+    /* Lignes de section → fond gris imprimé */
+    .cr-section-row { background: #ddd !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cr-total-row   { background: #bbb !important; color: #000 !important; font-weight: bold !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cr-result-row  { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Pied de document */
+    #cr-document > div:last-child,
+    #bilan-document > div:last-child { background: #333 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #cr-document > div:last-child *,
+    #bilan-document > div:last-child * { color: #fff !important; }
+
+    th, td { border-bottom: 1px solid #ccc !important; }
+
+    /* Bilan actif/passif header */
+    #bilan-document [style*="background:#0d2a18"],
+    #bilan-document [style*="background:#2a0d0d"] { background: #444 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #bilan-document [style*="background:#0d2a18"] *,
+    #bilan-document [style*="background:#2a0d0d"] * { color: #fff !important; }
+
+    #bilan-solde-zone { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #bilan-solde-zone * { color: #fff !important; }
+
+    @page { size: A4 portrait; margin: 12mm 15mm; }
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -939,42 +988,61 @@
     </div>
   </div>
 
-  <!-- Selector -->
   <div class="inner-tabs" style="margin-bottom:20px">
     <div class="inner-tab active" id="rapport-tab-cr" onclick="switchRapportTab('cr')">Compte de Résultat</div>
     <div class="inner-tab" id="rapport-tab-bilan" onclick="switchRapportTab('bilan')">Bilan Simplifié</div>
   </div>
 
-  <!-- COMPTE DE RÉSULTAT -->
+  <!-- COMPTE DE RÉSULTAT OFFICIEL -->
   <div id="rapport-panel-cr">
-    <div class="grid-2" style="gap:16px;align-items:start">
-      <!-- PRODUITS -->
-      <div class="card">
-        <div class="card-title" style="color:var(--green)">PRODUITS (Classe 7)</div>
-        <div class="table-wrap">
-          <table id="cr-produits-table">
-            <thead><tr><th>N° Cpte</th><th>Libellé</th><th>Budget</th><th>Réel</th><th>Écart</th></tr></thead>
-            <tbody id="cr-produits-body"></tbody>
-            <tfoot id="cr-produits-foot"></tfoot>
-          </table>
+    <!-- Document officiel centré -->
+    <div id="cr-document" style="max-width:860px;margin:0 auto;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:0;overflow:hidden">
+
+      <!-- En-tête du document -->
+      <div style="background:#1a3058;padding:24px 32px 20px;border-bottom:3px solid #2a5298">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:9px;font-weight:600;letter-spacing:2px;color:#8ab4f8;text-transform:uppercase;margin-bottom:6px">Association — Plan Comptable Associatif</div>
+            <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;letter-spacing:0.5px">COMPTE DE RÉSULTAT</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:#8ab4f8;margin-bottom:4px">EXERCICE CLOS LE</div>
+            <div style="font-family:'DM Mono',monospace;font-size:16px;color:#fff;font-weight:600">31/12/<span class="cr-year"></span></div>
+            <div style="font-size:11px;color:#8ab4f8;margin-top:8px">Du 01/01/<span class="cr-year"></span> au 31/12/<span class="cr-year"></span></div>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.15)">
+          <div id="cr-asso-name" style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff">La Cabane aux Fleurs — Accueil de Loisirs, Janneyrias</div>
         </div>
       </div>
-      <!-- CHARGES -->
-      <div class="card">
-        <div class="card-title" style="color:var(--red)">CHARGES (Classe 6)</div>
-        <div class="table-wrap">
-          <table id="cr-charges-table">
-            <thead><tr><th>N° Cpte</th><th>Libellé</th><th>Budget</th><th>Réel</th><th>Écart</th></tr></thead>
-            <tbody id="cr-charges-body"></tbody>
-            <tfoot id="cr-charges-foot"></tfoot>
-          </table>
-        </div>
+
+      <!-- Table CR unifiée -->
+      <div style="padding:0">
+        <table id="cr-table" style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:#0f2040;border-bottom:2px solid #2a5298">
+              <th style="width:55%;padding:10px 16px;text-align:left;font-family:'Syne',sans-serif;font-size:10px;letter-spacing:1px;color:#8ab4f8;text-transform:uppercase;font-weight:700">RUBRIQUES</th>
+              <th style="width:15%;padding:10px 16px;text-align:center;font-family:'Syne',sans-serif;font-size:10px;letter-spacing:1px;color:#8ab4f8;text-transform:uppercase;font-weight:700">N°</th>
+              <th style="width:15%;padding:10px 16px;text-align:right;font-family:'Syne',sans-serif;font-size:10px;letter-spacing:1px;color:#8ab4f8;text-transform:uppercase;font-weight:700">EXERCICE <span class="cr-year"></span></th>
+              <th style="width:15%;padding:10px 16px;text-align:right;font-family:'Syne',sans-serif;font-size:10px;letter-spacing:1px;color:#8ab4f8;text-transform:uppercase;font-weight:700">BUDGET</th>
+            </tr>
+          </thead>
+          <tbody id="cr-main-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Pied de page document -->
+      <div style="background:#0f2040;padding:12px 32px;border-top:2px solid #2a5298;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:11px;color:#8ab4f8">Les comptes de la Cabane — Outil de gestion financière</div>
+        <div style="font-size:11px;color:#8ab4f8">Généré le <span id="cr-date-gen"></span></div>
       </div>
     </div>
-    <!-- Résultat net -->
-    <div id="cr-resultat-zone" style="margin-top:16px"></div>
-    <!-- Graphique -->
-    <div class="card" style="margin-top:16px">
+
+    <!-- KPIs résumé sous le document -->
+    <div id="cr-resultat-zone" style="max-width:860px;margin:16px auto 0"></div>
+
+    <!-- Graphe -->
+    <div class="card" style="max-width:860px;margin:16px auto 0">
       <div class="card-title">Répartition Produits vs Charges</div>
       <div class="chart-container"><canvas id="chartCR"></canvas></div>
     </div>
@@ -982,39 +1050,72 @@
 
   <!-- BILAN SIMPLIFIÉ -->
   <div id="rapport-panel-bilan" style="display:none">
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title"><span class="dot" style="background:var(--orange)"></span>Note — Bilan simplifié</div>
-      <p style="color:var(--text2);font-size:13px;line-height:1.7">
-        Le bilan complet nécessite une comptabilité d'engagement (actif/passif avec amortissements, créances, dettes fournisseurs, immobilisations…).
-        Ce bilan simplifié est construit à partir des <strong>flux de trésorerie réels</strong> saisis dans l'outil.
-        Il donne une image de la position de trésorerie cumulée par compte comptable.
-      </p>
-    </div>
-    <div class="grid-2" style="gap:16px;align-items:start">
-      <!-- ACTIF -->
-      <div class="card">
-        <div class="card-title" style="color:var(--green)">ACTIF — Ressources encaissées</div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>N° Cpte</th><th>Libellé / Catégorie</th><th>Montant réel</th></tr></thead>
+
+    <!-- En-tête document bilan -->
+    <div id="bilan-document" style="max-width:860px;margin:0 auto;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <div style="background:#1a3058;padding:24px 32px 20px;border-bottom:3px solid #2a5298">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:9px;font-weight:600;letter-spacing:2px;color:#8ab4f8;text-transform:uppercase;margin-bottom:6px">Association — Bilan de trésorerie simplifié</div>
+            <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff">BILAN SIMPLIFIÉ</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:#8ab4f8;margin-bottom:4px">EXERCICE CLOS LE</div>
+            <div style="font-family:'DM Mono',monospace;font-size:16px;color:#fff;font-weight:600">31/12/<span class="bilan-year"></span></div>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.15)">
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff">La Cabane aux Fleurs — Accueil de Loisirs, Janneyrias</div>
+          <div style="font-size:12px;color:#8ab4f8;margin-top:4px">Ce bilan est construit à partir des flux de trésorerie réels saisis dans l'outil, regroupés par classe comptable.</div>
+        </div>
+      </div>
+
+      <!-- Tables côte à côte Actif / Passif -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <!-- ACTIF -->
+        <div style="border-right:1px solid var(--border)">
+          <div style="background:#0d2a18;padding:10px 16px;border-bottom:2px solid #2a6640">
+            <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:#4ade80;text-transform:uppercase">PRODUITS (RESSOURCES)</div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--bg3)">
+                <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600">Libellé</th>
+                <th style="padding:8px 12px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600">Montant €</th>
+              </tr>
+            </thead>
             <tbody id="bilan-actif-body"></tbody>
             <tfoot id="bilan-actif-foot"></tfoot>
           </table>
         </div>
-      </div>
-      <!-- PASSIF -->
-      <div class="card">
-        <div class="card-title" style="color:var(--red)">PASSIF — Charges décaissées</div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>N° Cpte</th><th>Libellé / Catégorie</th><th>Montant réel</th></tr></thead>
+        <!-- PASSIF -->
+        <div>
+          <div style="background:#2a0d0d;padding:10px 16px;border-bottom:2px solid #6a2020">
+            <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:#f87171;text-transform:uppercase">CHARGES (EMPLOIS)</div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--bg3)">
+                <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600">Libellé</th>
+                <th style="padding:8px 12px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600">Montant €</th>
+              </tr>
+            </thead>
             <tbody id="bilan-passif-body"></tbody>
             <tfoot id="bilan-passif-foot"></tfoot>
           </table>
         </div>
       </div>
+
+      <!-- Solde -->
+      <div id="bilan-solde-zone" style="border-top:2px solid #2a5298"></div>
+
+      <!-- Pied de page -->
+      <div style="background:#0f2040;padding:12px 32px;border-top:1px solid #2a5298;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:11px;color:#8ab4f8">Les comptes de la Cabane — Outil de gestion financière</div>
+        <div style="font-size:11px;color:#8ab4f8">Généré le <span id="bilan-date-gen"></span></div>
+      </div>
     </div>
-    <div id="bilan-solde-zone" style="margin-top:16px"></div>
+
   </div>
 </div>
 
@@ -3531,105 +3632,238 @@ function switchRapportTab(tab) {
 
 function renderCompteResultat() {
   const d = yd();
-  const pc = state.planComptable;
-  const fmt = v => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v);
+  const fmtN = v => v === 0 ? '-' : new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v);
+  const fmt  = v => new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v);
 
-  // ── Produits : regrouper le réel par compte, comparer au budget ──
-  const reelRecParCompte = {};
-  d.reel.recettes.forEach(r => {
-    const num = r.compte || '----';
-    if (!reelRecParCompte[num]) reelRecParCompte[num] = 0;
-    reelRecParCompte[num] += r.montant;
-  });
-  const budgetRecParCompte = {};
-  d.budget.recettes.forEach(l => {
-    const num = l.compte || '----';
-    if (!budgetRecParCompte[num]) budgetRecParCompte[num] = 0;
-    budgetRecParCompte[num] += l.mois.reduce((s,v)=>s+(v||0),0);
-  });
+  const body = document.getElementById('cr-main-body');
+  if (!body) return;
 
-  // ── Charges : idem ──
-  const reelDepParCompte = {};
-  d.reel.depenses.forEach(r => {
-    const num = r.compte || '----';
-    if (!reelDepParCompte[num]) reelDepParCompte[num] = 0;
-    reelDepParCompte[num] += r.montant;
-  });
-  const budgetDepParCompte = {};
-  d.budget.depenses.forEach(l => {
-    const num = l.compte || '----';
-    if (!budgetDepParCompte[num]) budgetDepParCompte[num] = 0;
-    budgetDepParCompte[num] += l.mois.reduce((s,v)=>s+(v||0),0);
-  });
+  // Mettre à jour dates
+  document.querySelectorAll('.cr-year').forEach(el => el.textContent = currentYear);
+  const genEl = document.getElementById('cr-date-gen');
+  if (genEl) genEl.textContent = new Date().toLocaleDateString('fr-FR');
 
-  // Ensemble des comptes (union budget + réel)
-  const allRecComptes = [...new Set([...Object.keys(reelRecParCompte), ...Object.keys(budgetRecParCompte)])].sort();
-  const allDepComptes = [...new Set([...Object.keys(reelDepParCompte), ...Object.keys(budgetDepParCompte)])].sort();
+  // ─── Agrégation par compte ───
+  const reelRec = {}, reelDep = {}, budRec = {}, budDep = {};
+  d.reel.recettes.forEach(r => { const n=r.compte||''; reelRec[n]=(reelRec[n]||0)+r.montant; });
+  d.reel.depenses.forEach(r => { const n=r.compte||''; reelDep[n]=(reelDep[n]||0)+r.montant; });
+  d.budget.recettes.forEach(l => { const n=l.compte||''; budRec[n]=(budRec[n]||0)+l.mois.reduce((s,v)=>s+(v||0),0); });
+  d.budget.depenses.forEach(l => { const n=l.compte||''; budDep[n]=(budDep[n]||0)+l.mois.reduce((s,v)=>s+(v||0),0); });
 
-  function libelleCompte(num, type) {
-    const arr = state.planComptable[type === 'rec' ? 'recettes' : 'depenses'];
-    const found = arr.find(c => c.numero === num);
-    return found ? found.libelle : (num === '----' ? 'Non classé' : `Compte ${num}`);
+  function sum(map, prefixes) {
+    return prefixes.reduce((s,p) => s + Object.entries(map).filter(([k])=>k.startsWith(p)).reduce((ss,[,v])=>ss+v,0), 0);
   }
 
-  function buildRows(allComptes, reelMap, budgetMap, type) {
-    return allComptes.map(num => {
-      const reel = reelMap[num] || 0;
-      const budget = budgetMap[num] || 0;
-      const ecart = reel - budget;
-      const ecartCls = type === 'rec' ? (ecart >= 0 ? 'pos' : 'neg') : (ecart <= 0 ? 'pos' : 'neg');
-      return `<tr>
-        <td><span class="badge badge-${type==='rec'?'green':'red'}">${num}</span></td>
-        <td class="label">${libelleCompte(num, type)}</td>
-        <td class="text-right" style="color:var(--text2)">${fmt(budget)}</td>
-        <td class="text-right fw700">${fmt(reel)}</td>
-        <td class="text-right ${ecartCls} fw700">${ecart >= 0 ? '+' : ''}${fmt(ecart)}</td>
-      </tr>`;
-    }).join('');
+  // ─── Calcul des rubriques ───
+  // PRODUITS D'EXPLOITATION (I)
+  const cotisations    = sum(reelRec,['756']);
+  const ventesServices = sum(reelRec,['706','707','708']);
+  const ventesAutres   = sum(reelRec,['700','701','702','703','704','705','709']);
+  const subvExploit    = sum(reelRec,['740','741','742','743','744','745','746','747','748','749']);
+  const autresProd     = sum(reelRec,['750','751','752','753','754','755','757','758','759']) - cotisations - ventesServices - ventesAutres;
+  const reprises       = sum(reelRec,['781','786','787','788']);
+  const transferts     = sum(reelRec,['791','796','797','798']);
+  const totalI = cotisations + ventesServices + ventesAutres + subvExploit + Math.max(0,autresProd) + reprises + transferts;
+
+  // CHARGES D'EXPLOITATION (II)
+  const achats60       = sum(reelDep,['600','601','602','603','604','605','606','607','608','609']);
+  const servicesExt    = sum(reelDep,['610','611','612','613','614','615','616','617','618','619']);
+  const autresServExt  = sum(reelDep,['620','621','622','623','624','625','626','627','628','629']);
+  const impots63       = sum(reelDep,['630','631','632','633','634','635','636','637','638','639']);
+  const salaires       = sum(reelDep,['640','641','642','643','644','648','649']);
+  const chargesSoc     = sum(reelDep,['645','646','647']);
+  const autresCharges  = sum(reelDep,['650','651','652','653','654','655','656','657','658','659']);
+  const dotations      = sum(reelDep,['680','681','686','687','688']);
+  const totalII = achats60 + servicesExt + autresServExt + impots63 + salaires + chargesSoc + autresCharges + dotations;
+
+  const resultatExploit = totalI - totalII;
+
+  // PRODUITS FINANCIERS (III)
+  const prodFinanciers = sum(reelRec,['760','761','762','763','764','765','766','767','768','769']);
+  // CHARGES FINANCIÈRES (IV)
+  const chargesFinancieres = sum(reelDep,['660','661','662','663','664','665','666','667','668','669']);
+  const resultatFinancier = prodFinanciers - chargesFinancieres;
+  const resultatCourant   = resultatExploit + resultatFinancier;
+
+  // PRODUITS EXCEPTIONNELS (V)
+  const prodExcept   = sum(reelRec,['770','771','772','773','774','775','776','777','778','779']);
+  // CHARGES EXCEPTIONNELLES (VI)
+  const chargesExcept = sum(reelDep,['670','671','672','673','674','675','676','677','678','679']);
+  const resultatExcept = prodExcept - chargesExcept;
+
+  const participation = sum(reelDep,['690','691']);
+  const impotsBenef   = sum(reelDep,['695','696','697','698','699']);
+
+  const excedent = resultatCourant + resultatExcept - participation - impotsBenef;
+
+  // CONTRIBUTIONS VOLONTAIRES (VII)
+  const contribBenevoles = sum(reelRec,['870','871','872','873','874','875']);
+  const contribNature    = sum(reelRec,['876','877','878','879']);
+  const totalContribRec  = contribBenevoles + contribNature;
+  const emploisBenevoles = sum(reelDep,['860','861','862','863','864','865']);
+  const emploisNature    = sum(reelDep,['866','867','868','869']);
+  const totalContribDep  = emploisBenevoles + emploisNature;
+
+  // Budget totaux
+  const bTotalI  = sum(budRec,['7']);
+  const bTotalII = sum(budDep,['6']);
+  const bExcedent = bTotalI - bTotalII;
+
+  // ─── Fonctions de rendu des lignes ───
+  function rowSection(label, num='') {
+    return `<tr class="cr-section-row" style="background:#1a3058">
+      <td colspan="2" style="padding:9px 16px;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.8px;color:#8ab4f8;text-transform:uppercase">${label}</td>
+      <td style="padding:9px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:10px;color:#8ab4f8">${num}</td>
+      <td style="padding:9px 8px"></td>
+    </tr>`;
+  }
+  function rowData(label, lineNum, reel, budget, indent=1) {
+    const pl = 16 + indent*20;
+    const dimColor = reel===0 ? 'color:var(--text3)' : '';
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:7px 16px 7px ${pl}px;${dimColor}">${label}</td>
+      <td style="padding:7px 8px;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">${lineNum}</td>
+      <td style="padding:7px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:12px;font-weight:${reel!==0?'600':'400'};${dimColor}">${fmtN(reel)}</td>
+      <td style="padding:7px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">${fmtN(budget)}</td>
+    </tr>`;
+  }
+  function rowTotal(label, lineNum, reel, budget, highlight=false) {
+    const bg  = highlight ? 'background:#0a1e3a' : 'background:var(--bg3)';
+    const col = reel>=0 ? '#4ade80' : '#f87171';
+    const bCol = budget>=0 ? 'var(--text2)' : 'var(--red)';
+    return `<tr class="cr-total-row" style="${bg};border-top:2px solid var(--border2);border-bottom:2px solid var(--border2)">
+      <td colspan="2" style="padding:9px 16px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--text)">${label}</td>
+      <td style="padding:9px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${col}">${reel!==0?fmt(reel)+' €':'-'}</td>
+      <td style="padding:9px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:${bCol}">${budget!==0?fmt(budget)+' €':'-'}</td>
+    </tr>`;
+  }
+  function rowResult(label, lineNum, reel, budget) {
+    const col = reel>=0 ? '#4ade80' : '#f87171';
+    const bCol = budget>=0 ? '#a3cfff' : '#fca5a5';
+    return `<tr class="cr-result-row" style="background:#0f2040;border-top:3px solid #2a5298;border-bottom:3px solid #2a5298">
+      <td colspan="2" style="padding:11px 16px;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#fff">${label}</td>
+      <td style="padding:11px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:${col}">${reel>=0?'+':''}${fmt(reel)} €</td>
+      <td style="padding:11px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:${bCol}">${budget>=0?'+':''}${fmt(budget)} €</td>
+    </tr>`;
+  }
+  function rowSpacer() {
+    return `<tr style="height:6px;background:var(--bg)"><td colspan="4"></td></tr>`;
   }
 
-  const totalReelRec    = Object.values(reelRecParCompte).reduce((s,v)=>s+v,0);
-  const totalBudRec     = Object.values(budgetRecParCompte).reduce((s,v)=>s+v,0);
-  const totalReelDep    = Object.values(reelDepParCompte).reduce((s,v)=>s+v,0);
-  const totalBudDep     = Object.values(budgetDepParCompte).reduce((s,v)=>s+v,0);
-  const ecartRec = totalReelRec - totalBudRec;
-  const ecartDep = totalReelDep - totalBudDep;
+  // ─── Construction du tableau ───
+  let html = '';
 
-  document.getElementById('cr-produits-body').innerHTML = buildRows(allRecComptes, reelRecParCompte, budgetRecParCompte, 'rec');
-  document.getElementById('cr-produits-foot').innerHTML = `<tr style="background:var(--bg3)">
-    <td colspan="2" class="fw700">TOTAL PRODUITS</td>
-    <td class="text-right fw700">${fmt(totalBudRec)}</td>
-    <td class="text-right fw700 pos">${fmt(totalReelRec)}</td>
-    <td class="text-right fw700 ${ecartRec>=0?'pos':'neg'}">${ecartRec>=0?'+':''}${fmt(ecartRec)}</td>
+  // ── I — PRODUITS D'EXPLOITATION ──
+  html += rowSection('I — PRODUITS D\'EXPLOITATION');
+  html += rowData('Cotisations, appels de fonds',        'AA', cotisations,    sum(budRec,['756']));
+  html += rowData('Ventes de marchandises',              'AB', ventesAutres,   sum(budRec,['700','701','702','703','704','705','709']));
+  html += rowData('Production vendue — prestations',     'AC', ventesServices, sum(budRec,['706','707','708']));
+  html += rowData('Subventions d\'exploitation',         'AD', subvExploit,    sum(budRec,['740','741','742','743','744','745','746','747','748','749']));
+  html += rowData('Autres produits de gestion courante', 'AE', Math.max(0,autresProd), 0);
+  html += rowData('Reprises sur amortissements et prov.','AF', reprises,       0);
+  html += rowData('Transferts de charges',               'AG', transferts,     0);
+  html += rowTotal('TOTAL I — PRODUITS D\'EXPLOITATION', 'TI', totalI, bTotalI);
+
+  html += rowSpacer();
+
+  // ── II — CHARGES D'EXPLOITATION ──
+  html += rowSection('II — CHARGES D\'EXPLOITATION');
+  html += rowData('Achats de marchandises et matières',  'BA', achats60,      sum(budDep,['600','601','602','603','604','605','606','607','608','609']));
+  html += rowData('Services extérieurs',                 'BB', servicesExt,   sum(budDep,['610','611','612','613','614','615','616','617','618','619']));
+  html += rowData('Autres services extérieurs',          'BC', autresServExt, sum(budDep,['620','621','622','623','624','625','626','627','628','629']));
+  html += rowData('Impôts, taxes et versements assimilés','BD', impots63,     sum(budDep,['630','631','632','633','634','635','636','637','638','639']));
+  html += rowData('Salaires et traitements',             'BE', salaires,      sum(budDep,['640','641','642','643','644','648','649']));
+  html += rowData('Charges sociales',                    'BF', chargesSoc,    sum(budDep,['645','646','647']));
+  html += rowData('Autres charges de gestion courante',  'BG', autresCharges, sum(budDep,['650','651','652','653','654','655','656','657','658','659']));
+  html += rowData('Dotations aux amortissements et prov.','BH', dotations,   sum(budDep,['680','681','686','687','688']));
+  html += rowTotal('TOTAL II — CHARGES D\'EXPLOITATION', 'TII', totalII, bTotalII);
+
+  html += rowSpacer();
+  html += rowResult('RÉSULTAT D\'EXPLOITATION (I − II)', 'RE', resultatExploit, bTotalI - bTotalII);
+  html += rowSpacer();
+
+  // ── III — PRODUITS FINANCIERS ──
+  html += rowSection('III — PRODUITS FINANCIERS');
+  html += rowData('Produits financiers', 'CA', prodFinanciers, 0);
+  html += rowTotal('TOTAL III', 'TIII', prodFinanciers, 0);
+  html += rowSpacer();
+
+  // ── IV — CHARGES FINANCIÈRES ──
+  html += rowSection('IV — CHARGES FINANCIÈRES');
+  html += rowData('Charges financières', 'DA', chargesFinancieres, 0);
+  html += rowTotal('TOTAL IV', 'TIV', chargesFinancieres, 0);
+  html += rowSpacer();
+  html += rowResult('RÉSULTAT FINANCIER (III − IV)', 'RF', resultatFinancier, 0);
+  html += rowSpacer();
+
+  html += rowResult('RÉSULTAT COURANT (RE + RF)', 'RC', resultatCourant, bExcedent);
+  html += rowSpacer();
+
+  // ── V — PRODUITS EXCEPTIONNELS ──
+  html += rowSection('V — PRODUITS EXCEPTIONNELS');
+  html += rowData('Produits exceptionnels', 'EA', prodExcept, 0);
+  html += rowTotal('TOTAL V', 'TV', prodExcept, 0);
+  html += rowSpacer();
+
+  // ── VI — CHARGES EXCEPTIONNELLES ──
+  html += rowSection('VI — CHARGES EXCEPTIONNELLES');
+  html += rowData('Charges exceptionnelles', 'FA', chargesExcept, 0);
+  html += rowTotal('TOTAL VI', 'TVI', chargesExcept, 0);
+  html += rowSpacer();
+  html += rowResult('RÉSULTAT EXCEPTIONNEL (V − VI)', 'RX', resultatExcept, 0);
+  html += rowSpacer();
+
+  // ── Participation & IS ──
+  if (participation > 0 || impotsBenef > 0) {
+    html += rowSection('IMPÔTS ET PARTICIPATION');
+    html += rowData('Participation des salariés', 'GA', participation, 0);
+    html += rowData('Impôts sur les bénéfices', 'GB', impotsBenef, 0);
+    html += rowSpacer();
+  }
+
+  // ── RÉSULTAT FINAL ──
+  html += `<tr style="background:#071428;border-top:4px solid #2a5298">
+    <td colspan="2" style="padding:14px 16px;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;letter-spacing:0.3px">
+      ${excedent>=0 ? '✦ EXCÉDENT DE L\'EXERCICE' : '▼ DÉFICIT DE L\'EXERCICE'}
+    </td>
+    <td style="padding:14px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:18px;font-weight:800;color:${excedent>=0?'#4ade80':'#f87171'}">
+      ${excedent>=0?'+':''}${fmt(excedent)} €
+    </td>
+    <td style="padding:14px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:${bExcedent>=0?'#a3cfff':'#fca5a5'}">
+      ${bExcedent>=0?'+':''}${fmt(bExcedent)} €
+    </td>
   </tr>`;
 
-  document.getElementById('cr-charges-body').innerHTML = buildRows(allDepComptes, reelDepParCompte, budgetDepParCompte, 'dep');
-  document.getElementById('cr-charges-foot').innerHTML = `<tr style="background:var(--bg3)">
-    <td colspan="2" class="fw700">TOTAL CHARGES</td>
-    <td class="text-right fw700">${fmt(totalBudDep)}</td>
-    <td class="text-right fw700 neg">${fmt(totalReelDep)}</td>
-    <td class="text-right fw700 ${ecartDep<=0?'pos':'neg'}">${ecartDep>=0?'+':''}${fmt(ecartDep)}</td>
-  </tr>`;
+  // ── VII — CONTRIBUTIONS VOLONTAIRES EN NATURE ──
+  if (totalContribRec > 0 || totalContribDep > 0) {
+    html += rowSpacer();
+    html += rowSection('VII — CONTRIBUTIONS VOLONTAIRES EN NATURE');
+    html += rowData('Bénévolat', 'HA', contribBenevoles, 0);
+    html += rowData('Prestations en nature', 'HB', contribNature, 0);
+    html += rowTotal('TOTAL CONTRIBUTIONS REÇUES', 'TVII', totalContribRec, 0);
+    html += rowData('Emplois des contributions volontaires', 'HC', emploisBenevoles + emploisNature, 0);
+    html += rowTotal('TOTAL CONTRIBUTIONS EMPLOYÉES', 'TVIII', totalContribDep, 0);
+  }
 
-  const reelResultat = totalReelRec - totalReelDep;
-  const budResultat  = totalBudRec  - totalBudDep;
-  const ecartResultat = reelResultat - budResultat;
+  body.innerHTML = html;
+
+  // ─── KPIs résumé ───
   document.getElementById('cr-resultat-zone').innerHTML = `
     <div class="grid-3" style="gap:12px">
-      <div class="kpi ${budResultat>=0?'green':'red'}">
-        <div class="kpi-label">Résultat Budget</div>
-        <div class="kpi-value">${fmt(budResultat)}</div>
-        <div class="kpi-sub">${fmt(totalBudRec)} Produits − ${fmt(totalBudDep)} Charges</div>
+      <div class="kpi ${totalI>0?'green':''}">
+        <div class="kpi-label">Total Produits (I)</div>
+        <div class="kpi-value">${fmt(totalI)} €</div>
+        <div class="kpi-sub">Budget : ${fmt(bTotalI)} €</div>
       </div>
-      <div class="kpi ${reelResultat>=0?'green':'red'}">
-        <div class="kpi-label">Résultat Réel</div>
-        <div class="kpi-value">${fmt(reelResultat)}</div>
-        <div class="kpi-sub">${fmt(totalReelRec)} encaissé − ${fmt(totalReelDep)} décaissé</div>
+      <div class="kpi red">
+        <div class="kpi-label">Total Charges (II)</div>
+        <div class="kpi-value">${fmt(totalII)} €</div>
+        <div class="kpi-sub">Budget : ${fmt(bTotalII)} €</div>
       </div>
-      <div class="kpi ${ecartResultat>=0?'green':'red'}">
-        <div class="kpi-label">Écart Budget / Réel</div>
-        <div class="kpi-value">${ecartResultat>=0?'+':''}${fmt(ecartResultat)}</div>
-        <div class="kpi-sub">Sur le résultat net</div>
+      <div class="kpi ${excedent>=0?'green':'red'}">
+        <div class="kpi-label">${excedent>=0?'EXCÉDENT':'DÉFICIT'} DE L'EXERCICE</div>
+        <div class="kpi-value" style="font-size:20px">${excedent>=0?'+':''}${fmt(excedent)} €</div>
+        <div class="kpi-sub">Budget : ${bExcedent>=0?'+':''}${fmt(bExcedent)} €</div>
       </div>
     </div>`;
 
@@ -3637,19 +3871,23 @@ function renderCompteResultat() {
   mkChart('chartCR', {
     type: 'bar',
     data: {
-      labels: ['Produits Budget', 'Produits Réel', 'Charges Budget', 'Charges Réel'],
-      datasets: [{
-        data: [totalBudRec, totalReelRec, totalBudDep, totalReelDep],
-        backgroundColor: ['rgba(46,204,138,0.3)','rgba(46,204,138,0.8)','rgba(249,95,95,0.3)','rgba(249,95,95,0.8)'],
-        borderColor:     ['rgba(46,204,138,0.8)','rgba(46,204,138,1)','rgba(249,95,95,0.8)','rgba(249,95,95,1)'],
-        borderWidth: 1
-      }]
+      labels: ['Cotisations','Prestations','Subventions','Autres prod.','Achats','Services ext.','Salaires','Ch. sociales','Dotations'],
+      datasets: [
+        { label: 'Réel',
+          data: [cotisations, ventesServices, subvExploit, Math.max(0,autresProd)+reprises,
+                 achats60, servicesExt+autresServExt, salaires, chargesSoc, dotations+autresCharges],
+          backgroundColor: [
+            'rgba(74,222,128,0.75)','rgba(74,222,128,0.75)','rgba(74,222,128,0.75)','rgba(74,222,128,0.75)',
+            'rgba(248,113,113,0.75)','rgba(248,113,113,0.75)','rgba(248,113,113,0.75)','rgba(248,113,113,0.75)','rgba(248,113,113,0.75)'
+          ],
+          borderWidth: 0 }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: chartDefaults.grid, ticks: chartDefaults.ticks },
+        x: { grid: chartDefaults.grid, ticks: { ...chartDefaults.ticks, maxRotation: 35, font:{size:11} } },
         y: { grid: chartDefaults.grid, ticks: { ...chartDefaults.ticks, callback: v => new Intl.NumberFormat('fr-FR',{notation:'compact'}).format(v)+'€' } }
       }
     }
@@ -3658,63 +3896,155 @@ function renderCompteResultat() {
 
 function renderBilanSimplified() {
   const d = yd();
-  const fmt = v => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v);
+  const fmtN = v => v === 0 ? '-' : new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v);
+  const fmt  = v => new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v);
 
-  // Actif = recettes réelles par compte
-  const actifMap = {};
+  // Libellé d'un compte depuis le plan comptable
+  function libelleCompte(num, type) {
+    const arr = state.planComptable[type === 'rec' ? 'recettes' : 'depenses'];
+    const found = arr && arr.find(c => c.numero === num);
+    return found ? found.libelle : (!num || num==='----' ? 'Non classé' : `Compte ${num}`);
+  }
+
+  // Met à jour dates
+  document.querySelectorAll('.bilan-year').forEach(el => el.textContent = currentYear);
+  const genEl = document.getElementById('bilan-date-gen');
+  if (genEl) genEl.textContent = new Date().toLocaleDateString('fr-FR');
+
+  // ─── Agrégation des flux réels par compte ───
+  const recMap = {}, depMap = {};
   d.reel.recettes.forEach(r => {
     const num = r.compte || '----';
-    if (!actifMap[num]) actifMap[num] = { libelle: r.cat, total: 0 };
-    actifMap[num].total += r.montant;
+    if (!recMap[num]) recMap[num] = { libelle: libelleCompte(num,'rec'), total: 0 };
+    recMap[num].total += r.montant;
   });
-  // Passif = dépenses réelles par compte
-  const passifMap = {};
-  d.reel.depenses.forEach(dep => {
-    const num = dep.compte || '----';
-    if (!passifMap[num]) passifMap[num] = { libelle: dep.cat, total: 0 };
-    passifMap[num].total += dep.montant;
+  d.reel.depenses.forEach(r => {
+    const num = r.compte || '----';
+    if (!depMap[num]) depMap[num] = { libelle: libelleCompte(num,'dep'), total: 0 };
+    depMap[num].total += r.montant;
   });
 
-  const totalActif  = Object.values(actifMap).reduce((s,v)=>s+v.total,0);
-  const totalPassif = Object.values(passifMap).reduce((s,v)=>s+v.total,0);
+  // ─── Regroupement par classe comptable ───
+  const CLASSES_REC = [
+    { cls: '7', label: 'Classe 7 — Produits', prefixes: ['7'] },
+    { cls: '8', label: 'Classe 8 — Contributions volontaires', prefixes: ['8'] },
+    { cls: 'autre', label: 'Autres', prefixes: [] }
+  ];
+  const CLASSES_DEP = [
+    { cls: '6', label: 'Classe 6 — Charges', prefixes: ['6'] },
+    { cls: '8', label: 'Classe 8 — Emplois contributions', prefixes: ['8'] },
+    { cls: 'autre', label: 'Autres', prefixes: [] }
+  ];
 
-  document.getElementById('bilan-actif-body').innerHTML = Object.entries(actifMap)
-    .sort((a,b)=>a[0].localeCompare(b[0]))
-    .map(([num,v]) => `<tr>
-      <td><span class="badge badge-green">${num}</span></td>
-      <td class="label">${libelleCompte(num,'rec')}</td>
-      <td class="text-right pos fw700">${fmt(v.total)}</td>
-    </tr>`).join('');
-  document.getElementById('bilan-actif-foot').innerHTML = `<tr style="background:var(--bg3)">
-    <td colspan="2" class="fw700">TOTAL ACTIF (encaissements)</td>
-    <td class="text-right pos fw700">${fmt(totalActif)}</td>
-  </tr>`;
+  function groupByClasse(map, classesDef) {
+    const groups = {};
+    classesDef.forEach(c => { groups[c.cls] = { label: c.label, items: [], total: 0 }; });
+    Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([num, v]) => {
+      const matched = classesDef.find(c => c.prefixes.some(p => num.startsWith(p)));
+      const key = matched ? matched.cls : 'autre';
+      if (groups[key]) {
+        groups[key].items.push({ num, libelle: v.libelle, total: v.total });
+        groups[key].total += v.total;
+      }
+    });
+    return groups;
+  }
 
-  document.getElementById('bilan-passif-body').innerHTML = Object.entries(passifMap)
-    .sort((a,b)=>a[0].localeCompare(b[0]))
-    .map(([num,v]) => `<tr>
-      <td><span class="badge badge-red">${num}</span></td>
-      <td class="label">${libelleCompte(num,'dep')}</td>
-      <td class="text-right neg fw700">${fmt(v.total)}</td>
-    </tr>`).join('');
-  document.getElementById('bilan-passif-foot').innerHTML = `<tr style="background:var(--bg3)">
-    <td colspan="2" class="fw700">TOTAL PASSIF (décaissements)</td>
-    <td class="text-right neg fw700">${fmt(totalPassif)}</td>
-  </tr>`;
+  const recGroups = groupByClasse(recMap, CLASSES_REC);
+  const depGroups = groupByClasse(depMap, CLASSES_DEP);
+  const totalRec = Object.values(recMap).reduce((s,v)=>s+v.total,0);
+  const totalDep = Object.values(depMap).reduce((s,v)=>s+v.total,0);
+  const solde = totalRec - totalDep;
 
-  const solde = totalActif - totalPassif;
+  // ─── Rendu Actif (Produits/Ressources) ───
+  let actifHtml = '';
+  let actifFootHtml = '';
+  if (totalRec === 0) {
+    actifHtml = `<tr><td colspan="2" style="padding:16px;text-align:center;color:var(--text3);font-style:italic">Aucune recette réelle saisie pour ${currentYear}</td></tr>`;
+  } else {
+    CLASSES_REC.forEach(c => {
+      const g = recGroups[c.cls];
+      if (!g || g.items.length === 0) return;
+      // En-tête de classe
+      actifHtml += `<tr style="background:#0d2a18;border-top:1px solid var(--border2)">
+        <td colspan="2" style="padding:7px 12px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.8px;color:#4ade80;text-transform:uppercase">${g.label}</td>
+      </tr>`;
+      g.items.forEach(item => {
+        actifHtml += `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:6px 12px">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;background:rgba(74,222,128,0.12);color:#4ade80;padding:2px 6px;border-radius:4px;margin-right:8px">${item.num}</span>
+            <span style="font-size:12px">${item.libelle}</span>
+          </td>
+          <td style="padding:6px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:#4ade80">${fmtN(item.total)}</td>
+        </tr>`;
+      });
+      if (g.items.length > 1) {
+        actifHtml += `<tr style="background:rgba(74,222,128,0.06);border-bottom:1px solid var(--border2)">
+          <td style="padding:5px 12px 5px 28px;font-size:11px;color:var(--text2);font-style:italic">Sous-total ${g.label.split('—')[0].trim()}</td>
+          <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#4ade80">${fmt(g.total)}</td>
+        </tr>`;
+      }
+    });
+    actifFootHtml = `<tr style="background:#0a2010;border-top:2px solid #2a6640">
+      <td style="padding:10px 12px;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:#4ade80">TOTAL PRODUITS</td>
+      <td style="padding:10px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:14px;font-weight:800;color:#4ade80">${fmt(totalRec)} €</td>
+    </tr>`;
+  }
+  document.getElementById('bilan-actif-body').innerHTML = actifHtml;
+  document.getElementById('bilan-actif-foot').innerHTML = actifFootHtml;
+
+  // ─── Rendu Passif (Charges/Emplois) ───
+  let passifHtml = '';
+  let passifFootHtml = '';
+  if (totalDep === 0) {
+    passifHtml = `<tr><td colspan="2" style="padding:16px;text-align:center;color:var(--text3);font-style:italic">Aucune dépense réelle saisie pour ${currentYear}</td></tr>`;
+  } else {
+    CLASSES_DEP.forEach(c => {
+      const g = depGroups[c.cls];
+      if (!g || g.items.length === 0) return;
+      passifHtml += `<tr style="background:#2a0d0d;border-top:1px solid var(--border2)">
+        <td colspan="2" style="padding:7px 12px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.8px;color:#f87171;text-transform:uppercase">${g.label}</td>
+      </tr>`;
+      g.items.forEach(item => {
+        passifHtml += `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:6px 12px">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;background:rgba(248,113,113,0.12);color:#f87171;padding:2px 6px;border-radius:4px;margin-right:8px">${item.num}</span>
+            <span style="font-size:12px">${item.libelle}</span>
+          </td>
+          <td style="padding:6px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:#f87171">${fmtN(item.total)}</td>
+        </tr>`;
+      });
+      if (g.items.length > 1) {
+        passifHtml += `<tr style="background:rgba(248,113,113,0.06);border-bottom:1px solid var(--border2)">
+          <td style="padding:5px 12px 5px 28px;font-size:11px;color:var(--text2);font-style:italic">Sous-total ${g.label.split('—')[0].trim()}</td>
+          <td style="padding:5px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#f87171">${fmt(g.total)}</td>
+        </tr>`;
+      }
+    });
+    passifFootHtml = `<tr style="background:#200a0a;border-top:2px solid #6a2020">
+      <td style="padding:10px 12px;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:#f87171">TOTAL CHARGES</td>
+      <td style="padding:10px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:14px;font-weight:800;color:#f87171">${fmt(totalDep)} €</td>
+    </tr>`;
+  }
+  document.getElementById('bilan-passif-body').innerHTML = passifHtml;
+  document.getElementById('bilan-passif-foot').innerHTML = passifFootHtml;
+
+  // ─── Zone solde ───
+  const soldeCoul = solde >= 0 ? '#4ade80' : '#f87171';
   document.getElementById('bilan-solde-zone').innerHTML = `
-    <div class="card" style="border-color:${solde>=0?'var(--green)':'var(--red)'}">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text3);margin-bottom:4px">SOLDE DE TRÉSORERIE NET (Actif − Passif)</div>
-          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:${solde>=0?'var(--green)':'var(--red)'}">${solde>=0?'+':''}${fmt(solde)}</div>
+    <div style="background:#071428;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;color:#8ab4f8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">
+          ${solde>=0?'✦ EXCÉDENT DE TRÉSORERIE':'▼ DÉFICIT DE TRÉSORERIE'} (Produits − Charges)
         </div>
-        <div style="text-align:right;color:var(--text2);font-size:12px">
-          <div>Encaissements : ${fmt(totalActif)}</div>
-          <div>Décaissements : ${fmt(totalPassif)}</div>
-          <div style="margin-top:4px;color:var(--text3)">Basé sur le suivi réel ${currentYear}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:800;color:${soldeCoul}">
+          ${solde>=0?'+':''}${fmt(solde)} €
         </div>
+      </div>
+      <div style="text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:#8ab4f8">
+        <div>Encaissements : <strong style="color:#4ade80">${fmt(totalRec)} €</strong></div>
+        <div>Décaissements : <strong style="color:#f87171">${fmt(totalDep)} €</strong></div>
+        <div style="margin-top:6px;font-size:10px;color:rgba(138,180,248,0.6)">Exercice réel ${currentYear}</div>
       </div>
     </div>`;
 }
